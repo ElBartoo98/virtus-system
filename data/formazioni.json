@@ -1,0 +1,93 @@
+{
+  "ElBarto_98_": [
+    {
+      "nome": "test",
+      "modulo": "3-3-1",
+      "posizioni": {
+        "cen1": "Diablito",
+        "att": "ValerioMaggiMaggi",
+        "cen2": "Sgomma",
+        "dif3": "BelloBeli",
+        "cen3": "Flavio maggi",
+        "dif1": "Fede",
+        "dif2": "Giulietto",
+        "por": "Lello"
+      }
+    },
+    {
+      "giornata": "Giornata Test",
+      "data": "2025-11-03T23:59",
+      "formazione": "3-3-1",
+      "posizioni": {
+        "cen1": "Diablito",
+        "att": "ValerioMaggiMaggi",
+        "cen2": "Sgomma",
+        "dif3": "BelloBeli",
+        "cen3": "Flavio maggi",
+        "dif1": "Fede",
+        "dif2": "Giulietto",
+        "por": "Lello"
+      },
+      "locked": true
+    },
+    {
+      "giornata": "Giornata Test",
+      "data": "2025-11-03T23:59",
+      "formazione": "3-3-1",
+      "posizioni": {
+        "cen1": "Diablito",
+        "att": "ValerioMaggiMaggi",
+        "cen2": "Sgomma",
+        "dif3": "BelloBeli",
+        "cen3": "Flavio maggi",
+        "dif1": "Fede",
+        "dif2": "Giulietto",
+        "por": "Lello"
+      },
+      "locked": true
+    }
+  ],
+  "GICI98": [
+    {
+      "giornata": "Giornata Test",
+      "data": "2025-11-03T23:59",
+      "formazione": "3-3-1",
+      "posizioni": {
+        "cen2": "Simo",
+        "att": "Flavio maggi",
+        "cen1": "ValerioMaggiMaggi",
+        "dif1": "Nigre",
+        "dif2": "Giunto",
+        "dif3": "ValerioMaggiMaggi",
+        "cen3": "Flavio maggi",
+        "por": "ValerioMaggiMaggi"
+      },
+      "locked": true
+    },
+    {
+      "giornata": "Giornata Test",
+      "data": "2025-11-03T23:59",
+      "formazione": "3-3-1",
+      "posizioni": {
+        "cen1": "ValerioMaggiMaggi",
+        "dif1": "Flavio maggi",
+        "att": "Simo",
+        "dif2": "Nigre",
+        "cen2": "ValerioMaggiMaggi",
+        "dif3": "Giunto",
+        "cen3": "Nigre",
+        "por": "Giunto"
+      },
+      "locked": true
+    },
+    {
+      "nome": "testgici",
+      "modulo": "3-3-1",
+      "posizioni": {
+        "dif1": "ValerioMaggiMaggi",
+        "att": "Nigre",
+        "dif2": "Simo"
+      }
+    }
+  ]
+}
