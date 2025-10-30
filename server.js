@@ -18,14 +18,19 @@ const baseDir = __dirname;
 const dataDir = path.join(baseDir, "data");
 if (!fs.existsSync(dataDir)) fs.mkdirSync(dataDir);
 
+// ✅ Percorso dell’inventario: differente tra locale e Render
 const inventarioPath =
-  "C:/Users/Utente/OneDrive/Desktop/Obito Uchiha/ElBarto_98_ Twitch/Squadra Virtus Colleverde/Carte con LOGO/VirtusSystem/inventario.csv";
+  process.env.NODE_ENV === "production"
+    ? path.join(dataDir, "inventario.csv") // Su Render: dentro /data
+    : "C:/Users/Utente/OneDrive/Desktop/Obito Uchiha/ElBarto_98_ Twitch/Squadra Virtus Colleverde/Carte con LOGO/VirtusSystem/inventario.csv"; // Locale
+
 const formazioniPath = path.join(dataDir, "formazioni.json");
 const giornatePath = path.join(dataDir, "giornate.json");
 const votiPath = path.join(dataDir, "voti.json");
 const classificaPath = path.join(dataDir, "classifica.json");
 const classificaTotPath = path.join(dataDir, "classifica_totale.json");
 
+// ✅ Crea i file se non esistono
 const ensureFile = (file, defaultContent = "{}") => {
   if (!fs.existsSync(file)) fs.writeFileSync(file, defaultContent);
 };
@@ -39,6 +44,15 @@ const ensureFile = (file, defaultContent = "{}") => {
 app.get("/inventario/:username", (req, res) => {
   const user = req.params.username.toLowerCase();
   const results = [];
+
+  // Se il file non esiste su Render, mostra errore controllato
+  if (!fs.existsSync(inventarioPath)) {
+    console.error("❌ File inventario.csv non trovato:", inventarioPath);
+    return res.status(500).json({
+      errore: "File inventario.csv mancante su server.",
+      percorso: inventarioPath,
+    });
+  }
 
   fs.createReadStream(inventarioPath)
     .pipe(csv())
@@ -202,105 +216,13 @@ app.post("/formazione/invia", (req, res) => {
 });
 
 // ======================================================
-// 🔍 ADMIN: Visualizza formazioni inviate per giornata
+// 🌐 SERVE LE CARTE (anche in locale)
 // ======================================================
-app.get("/admin/formazioni/:giornata", (req, res) => {
-  try {
-    const giornataRichiesta = decodeURIComponent(req.params.giornata).trim();
-    const formazioni = JSON.parse(fs.readFileSync(formazioniPath));
-
-    if (!Object.keys(formazioni).length) return res.json([]);
-
-    const risultato = Object.entries(formazioni)
-      .map(([username, elenco]) => {
-        const f = elenco.find(
-          (x) =>
-            x.giornata &&
-            x.giornata.toLowerCase().trim() === giornataRichiesta.toLowerCase()
-        );
-        return f ? { username, ...f } : null;
-      })
-      .filter(Boolean);
-
-    res.json(risultato);
-  } catch (err) {
-    console.error("Errore lettura formazioni admin:", err);
-    res.status(500).json({ errore: "Errore nel caricamento delle formazioni" });
-  }
-});
-
-// ======================================================
-// 🧮 GESTIONE VOTI + CLASSIFICHE
-// ======================================================
-app.post("/admin/voti", (req, res) => {
-  const { giornata, voti } = req.body;
-  if (!giornata || !voti)
-    return res.status(400).json({ error: "Dati mancanti" });
-
-  try {
-    const votiData = JSON.parse(fs.readFileSync(votiPath));
-    votiData[giornata] = voti;
-    fs.writeFileSync(votiPath, JSON.stringify(votiData, null, 2));
-
-    const formazioni = JSON.parse(fs.readFileSync(formazioniPath));
-    const giornate = JSON.parse(fs.readFileSync(giornatePath));
-    const giornataObj = Object.values(giornate).find((g) => g.nome === giornata);
-    if (!giornataObj) return res.status(404).json({ error: "Giornata non trovata" });
-
-    const classificaGiornata = {};
-    for (const [utente, formlist] of Object.entries(formazioni)) {
-      const formGiorno = formlist.find((f) => f.giornata === giornata);
-      if (formGiorno && formGiorno.posizioni) {
-        const votiUtente = Object.values(formGiorno.posizioni)
-          .map((carta) => parseFloat(voti[carta]))
-          .filter((v) => !isNaN(v));
-        if (votiUtente.length > 0) {
-          const media = votiUtente.reduce((a, b) => a + b, 0) / votiUtente.length;
-          classificaGiornata[utente] = parseFloat(media.toFixed(2));
-        }
-      }
-    }
-
-    const classifica = JSON.parse(fs.readFileSync(classificaPath));
-    classifica[giornata] = classificaGiornata;
-    fs.writeFileSync(classificaPath, JSON.stringify(classifica, null, 2));
-
-    const totale = JSON.parse(fs.readFileSync(classificaTotPath));
-    for (const [utente, media] of Object.entries(classificaGiornata)) {
-      if (!totale[utente]) totale[utente] = { punti: 0, giornate: 0 };
-      totale[utente].punti += media;
-      totale[utente].giornate += 1;
-    }
-    fs.writeFileSync(classificaTotPath, JSON.stringify(totale, null, 2));
-
-    console.log(`✅ Voti e classifica aggiornati per ${giornata}`);
-    res.json({ ok: true, messaggio: "✅ Voti salvati e classifica aggiornata!" });
-  } catch (err) {
-    console.error("❌ Errore salvataggio voti/classifica:", err);
-    res.status(500).json({ error: "Errore durante il calcolo classifica" });
-  }
-});
-
-// ======================================================
-// 🏆 CLASSIFICHE PUBBLICHE
-// ======================================================
-app.get("/classifica", (req, res) => {
-  try {
-    const classifica = JSON.parse(fs.readFileSync(classificaPath));
-    res.json(classifica);
-  } catch (err) {
-    res.status(500).json({ error: "Errore lettura classifica" });
-  }
-});
-
-app.get("/classifica/totale", (req, res) => {
-  try {
-    const totale = JSON.parse(fs.readFileSync(classificaTotPath));
-    res.json(totale);
-  } catch (err) {
-    res.status(500).json({ error: "Errore lettura classifica totale" });
-  }
-});
+const carteDir = path.join(__dirname, "client", "public", "carte");
+if (fs.existsSync(carteDir)) {
+  app.use("/carte", express.static(carteDir));
+  console.log("🖼️ Cartelle carte servite da:", carteDir);
+}
 
 // ======================================================
 // 🌐 SERVE FRONTEND REACT SU RENDER
