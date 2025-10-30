@@ -1,3 +1,6 @@
+// ======================================================
+// 🌀 VIRTUS SYSTEM - SERVER COMPLETO
+// ======================================================
 const express = require("express");
 const fs = require("fs");
 const path = require("path");
@@ -244,7 +247,6 @@ app.post("/admin/voti", (req, res) => {
     const giornataObj = Object.values(giornate).find((g) => g.nome === giornata);
     if (!giornataObj) return res.status(404).json({ error: "Giornata non trovata" });
 
-    // 🔹 Calcola media voti per ogni utente
     const classificaGiornata = {};
     for (const [utente, formlist] of Object.entries(formazioni)) {
       const formGiorno = formlist.find((f) => f.giornata === giornata);
@@ -259,12 +261,10 @@ app.post("/admin/voti", (req, res) => {
       }
     }
 
-    // 🔹 Salva classifica giornata
     const classifica = JSON.parse(fs.readFileSync(classificaPath));
     classifica[giornata] = classificaGiornata;
     fs.writeFileSync(classificaPath, JSON.stringify(classifica, null, 2));
 
-    // 🔹 Aggiorna classifica totale
     const totale = JSON.parse(fs.readFileSync(classificaTotPath));
     for (const [utente, media] of Object.entries(classificaGiornata)) {
       if (!totale[utente]) totale[utente] = { punti: 0, giornate: 0 };
@@ -278,61 +278,6 @@ app.post("/admin/voti", (req, res) => {
   } catch (err) {
     console.error("❌ Errore salvataggio voti/classifica:", err);
     res.status(500).json({ error: "Errore durante il calcolo classifica" });
-  }
-});
-
-// ======================================================
-// 🗑️ ADMIN: Eliminazione formazioni e voti
-// ======================================================
-app.delete("/admin/formazioni/:giornata", (req, res) => {
-  const giornata = decodeURIComponent(req.params.giornata).trim();
-  try {
-    const formazioni = JSON.parse(fs.readFileSync(formazioniPath));
-
-    for (const utente of Object.keys(formazioni)) {
-      formazioni[utente] = formazioni[utente].filter(
-        (f) => f.giornata?.toLowerCase() !== giornata.toLowerCase()
-      );
-    }
-
-    fs.writeFileSync(formazioniPath, JSON.stringify(formazioni, null, 2));
-    console.log(`🗑️ Tutte le formazioni eliminate per "${giornata}"`);
-    res.json({ ok: true, messaggio: `🗑️ Formazioni di ${giornata} eliminate con successo` });
-  } catch (err) {
-    console.error("Errore eliminazione formazioni giornata:", err);
-    res.status(500).json({ errore: "Errore eliminazione formazioni giornata" });
-  }
-});
-
-app.delete("/admin/voti/:giornata", (req, res) => {
-  const giornata = decodeURIComponent(req.params.giornata).trim();
-  try {
-    const votiData = JSON.parse(fs.readFileSync(votiPath));
-    const classifica = JSON.parse(fs.readFileSync(classificaPath));
-    const totale = JSON.parse(fs.readFileSync(classificaTotPath));
-
-    delete votiData[giornata];
-    delete classifica[giornata];
-
-    // Ricalcola la classifica totale
-    const nuovoTotale = {};
-    for (const [g, risultati] of Object.entries(classifica)) {
-      for (const [utente, media] of Object.entries(risultati)) {
-        if (!nuovoTotale[utente]) nuovoTotale[utente] = { punti: 0, giornate: 0 };
-        nuovoTotale[utente].punti += media;
-        nuovoTotale[utente].giornate += 1;
-      }
-    }
-
-    fs.writeFileSync(votiPath, JSON.stringify(votiData, null, 2));
-    fs.writeFileSync(classificaPath, JSON.stringify(classifica, null, 2));
-    fs.writeFileSync(classificaTotPath, JSON.stringify(nuovoTotale, null, 2));
-
-    console.log(`🗑️ Voti e classifica rimossi per "${giornata}"`);
-    res.json({ ok: true, messaggio: `🗑️ Voti e classifica di ${giornata} eliminati` });
-  } catch (err) {
-    console.error("Errore eliminazione voti/classifica:", err);
-    res.status(500).json({ errore: "Errore eliminazione voti/classifica" });
   }
 });
 
@@ -358,6 +303,18 @@ app.get("/classifica/totale", (req, res) => {
 });
 
 // ======================================================
+// 🌐 SERVE FRONTEND REACT SU RENDER
+// ======================================================
+const clientBuildPath = path.join(__dirname, "client", "build");
+if (fs.existsSync(clientBuildPath)) {
+  app.use(express.static(clientBuildPath));
+  app.get("*", (req, res) => {
+    res.sendFile(path.join(clientBuildPath, "index.html"));
+  });
+}
+
+// ======================================================
 // 🚀 AVVIO SERVER
 // ======================================================
-app.listen(3001, () => console.log("✅ Server attivo su http://localhost:3001"));
+const PORT = process.env.PORT || 3001;
+app.listen(PORT, () => console.log(`✅ Server attivo sulla porta ${PORT}`));
